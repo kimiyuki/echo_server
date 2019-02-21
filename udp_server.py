@@ -11,11 +11,12 @@ stream_handler.setLevel(logging.DEBUG)
 file_handler = FileHandler("log/udp_server.log")
 file_handler.setLevel(logging.DEBUG)
 handler_format = Formatter(
-        '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    "%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 stream_handler.setFormatter(handler_format)
 file_handler.setFormatter(handler_format)
 logger.addHandler(stream_handler)
 logger.addHandler(file_handler)
+
 
 class EchoServerProtocol:
   def connection_made(self, transport):
@@ -38,9 +39,9 @@ class EchoServerProtocol:
 
 
 #get variables needed for reply
-port = int(sys.argv[1]) if len(sys.argv)>1 else 8889
+port = int(sys.argv[1]) if len(sys.argv) > 1 else 8889
 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-s.connect(('8.8.8.8',1)) # udp does not send a packet with connect()
+s.connect(('8.8.8.8', 1))  # udp does not send a packet with connect()
 #ip for a reply message
 ip = s.getsockname()[0]
 
