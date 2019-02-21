@@ -23,7 +23,7 @@ def lg():
 
 logger =lg()
 async def main():
-  remote1 = await open_remote_endpoint('192.168.0.101', 8889)
+  remote1 = await open_remote_endpoint('0.0.0.0', 8890)
   #remote2 = await open_remote_endpoint('192.168.0.113', 8889)
   logger.debug('remote1,2 initialized')
 
