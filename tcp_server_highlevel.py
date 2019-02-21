@@ -31,12 +31,12 @@ async def handle_echo(reader, writer):
 
 
 async def main(port):
-    server = await asyncio.start_server(handle_echo, '0.0.0.0', 8890)
+    server = await asyncio.start_server(handle_echo, '0.0.0.0', int(port))
     addr = server.sockets[0].getsockname()
     print(f'Serving on {addr}')
     async with server:
         await server.serve_forever()
 
 
-port = int(sys.argv[1]) if len(sys.argv) > 1 else 8890
+port = int(sys.argv[1]) if len(sys.argv) > 1 else 8892
 asyncio.run(main(port))

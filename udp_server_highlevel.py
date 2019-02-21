@@ -39,7 +39,7 @@ class EchoServerProtocol:
 
 
 #get variables needed for reply
-port = int(sys.argv[1]) if len(sys.argv) > 1 else 8889
+port = int(sys.argv[1]) if len(sys.argv) > 1 else 8890
 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 s.connect(('8.8.8.8', 1))  # udp does not send a packet with connect()
 #ip for a reply message
