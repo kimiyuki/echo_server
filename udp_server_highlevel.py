@@ -1,60 +1,62 @@
-import asyncio
-import sys, time, socket, re
+from utils.aioudp import open_remote_endpoint 
+import asyncio, queue
+import logging, time, datetime
+from logging import \
+  getLogger, FileHandler, StreamHandler,Formatter
 
-#logging
-import logging
-from logging import getLogger, StreamHandler, Formatter, FileHandler
-logger = getLogger("udp_server")
-logger.setLevel(logging.DEBUG)
-stream_handler = StreamHandler()
-stream_handler.setLevel(logging.DEBUG)
-file_handler = FileHandler("log/udp_server.log")
-file_handler.setLevel(logging.DEBUG)
-handler_format = Formatter(
-    "%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-stream_handler.setFormatter(handler_format)
-file_handler.setFormatter(handler_format)
-logger.addHandler(stream_handler)
-logger.addHandler(file_handler)
+q = queue.Queue(maxsize=3)
 
+def lg():
+  logger = getLogger("app")
+  logger.setLevel(logging.DEBUG)
+  fh = FileHandler("log/tello.log")
+  fh.setLevel(logging.DEBUG)
+  sh = StreamHandler()
+  sh.setLevel(logging.DEBUG)
+  handler_format = Formatter(
+      '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+  sh.setFormatter(handler_format)
+  fh.setFormatter(handler_format)
+  logger.addHandler(sh)
+  logger.addHandler(fh)
+  return logger
 
-class EchoServerProtocol:
-  def connection_made(self, transport):
-    self.transport = transport
+logger =lg()
+async def main():
+  remote1 = await open_remote_endpoint('192.168.0.101', 8889)
+  #remote2 = await open_remote_endpoint('192.168.0.113', 8889)
+  logger.debug('remote1,2 initialized')
 
-  def datagram_received(self, data, addr):
-    message = data.decode()
-    logger.debug('Received %r from %s' % (message, addr))
-    if message[0] == 'e':
-      # simulate error not to send back
-      return
-    m = re.match('^\d', message[0])
-    w = int(m[0]) if m else 3
-    msg = f'{ip}:{port}/recv2:{data}'
-    asyncio.create_task(self.delay_back(msg, addr, w))
+  print( datetime.datetime.now().strftime("%M:%S") )
+  remote1.send(b'9 taskA')
+  remote1.send(b'8 taskA')
+  remote1.send(b'2 taskA')
+  remote1.send(b'1 taskA')
+  t1 = asyncio.wait_for(remote1.receive(), 5)
+  t2 = asyncio.create_task(remote1.receive())
+  t3 = asyncio.create_task(remote1.receive())
+  t4 = asyncio.create_task(remote1.receive())
+  #tasks = await asyncio.gather(t1, t2, t3, t4)
+  for task in asyncio.as_completed({t1,t2,t3,t4}):
+    try:
+      ret = await task
+      logger.debug(f"ret:{ret}")
+    except asyncio.TimeoutError as exc:
+      logger.debug(f"timeout:{exc}")
+      breakpoint()
+      asyncio.wait_for(remote1.receive(), 5)
+    else:
+      logger.debug(f"done:{task}")
 
-  async def delay_back(self, data, addr, w):
-    await asyncio.sleep(w)
-    self.transport.sendto(data.encode(), addr)
+  print( datetime.datetime.now().strftime("%M:%S") )
 
+  remote1.send(b'1 taskB')
+  t3 = await remote1.receive()
+  logger.debug(t3)
 
-#get variables needed for reply
-port = int(sys.argv[1]) if len(sys.argv) > 1 else 8890
-s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-s.connect(('8.8.8.8', 1))  # udp does not send a packet with connect()
-#ip for a reply message
-ip = s.getsockname()[0]
+  remote1.close()
+
 
 loop = asyncio.get_event_loop()
-print("Starting UDP server")
-adr = ('0.0.0.0', port)
-listen = loop.create_datagram_endpoint(EchoServerProtocol, local_addr=adr)
-transport, protocol = loop.run_until_complete(listen)
-
-try:
-  loop.run_forever()
-except KeyboardInterrupt:
-  pass
-
-transport.close()
+loop.run_until_complete(main())
 loop.close()
